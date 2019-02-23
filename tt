@@ -1,0 +1,121 @@
+#!/bin/bash
+
+# Read the rows into an array of lines.
+lines=()
+n=0
+while read -r line; do
+  #echo "${line:0:1}"
+
+ if [ $n == 0 ]; then
+   if [ "${line:0:1}" == "+" ]; then
+     ruler=$line
+   fi
+ fi
+
+ if [ "${line:0:1}" != "+" ]; then
+    #${lines[@]}+=($line)
+    #${lines[@]}+="$line"
+    #lines+=("$line")
+    #${lines[@]}+=( "$line" )
+    #lines+=( $line )
+    lines+=( "$line" )
+    #lines+=( "$line" )
+    #lines=( "${lines[@]}" "$line" )
+    #echo "$line"
+    (( n++ ))
+ fi
+done
+
+#echo "n = $n"
+
+# Determine the number and length of each field/column.
+lengths=`echo "$ruler" | sed 's/^+//' | sed 's/+$//' | sed 's/+/\n/g' | awk '{ printf("%d|", length($0)) }' | xargs echo`
+#echo "$lengths"
+
+IFS='|'
+# Determine the number of fields/columns.
+#echo "${lines[0]}"
+asdf=`echo "${lines[0]}" | sed 's/[^|]//g'`
+#echo "asdf = $asdf"
+m=`echo "${lines[0]}" | sed 's/[^|]//g' | wc -c`
+#echo "m = $m"
+
+#echo ""
+
+widths=""
+for fromRow in "${lines[@]}" ; do
+  colWidth=0
+  xj=2
+  xm=`echo "$lengths" | cut -d\| -f 1`
+  k=2
+  for ((j=2;j<m;j++)) do
+    fieldLen=`echo "${fromRow:$xj:$xm-1}" |  sed 's/^ *//' | sed 's/ *$//' | awk '{ print length($0)}'`
+    if [ $fieldLen -gt $colWidth ]; then
+      colWidth=$fieldLen
+    fi
+    xj=`echo "$xj+$xm+1" | bc`
+    xm=`echo "$lengths" | cut -d\| -f $k`
+    (( k++ ))
+  done
+  if [ $colWidth -gt 16 ]; then
+    colWidth=16
+  fi
+  widths=`echo "$widths$colWidth|"`
+done
+
+# Output the columns in rows.
+xi=2
+xn=`echo "$lengths" | cut -d\| -f 1`
+for ((i=2;i<m;i++)) do
+  #echo "$xi $xn"
+
+  toRow=""
+  j=1
+  for fromRow in "${lines[@]}" ; do
+    #field=`echo "$fromRow" | cut -d\| -f $i | sed 's/^ */|/' | sed 's/ *$//'`
+    field=`echo "${fromRow:$xi:$xn-1}" |  sed 's/^ *//' | sed 's/ *$//'`
+    #x=`echo "$field" | awk '{ printf("%12s",$0) }'`
+    #echo "$x"
+    #echo "$field"
+    #field=$field$colPad
+
+    colWidth=`echo "$widths" | cut -d\| -f $j`
+
+    printf -v colPad %${colWidth}s
+
+    field=`echo "$colPad$field" | rev`
+    field=`echo "${field:0:$colWidth}" | rev`
+    toRow="$toRow|$field"
+      #read -ra fields <<< "$fromRow"
+    #for field in "${fields[@]}"; do
+    #  echo "$field"
+    #done
+    (( j++ ))
+  done
+
+  toRow="$toRow|"
+  echo "$toRow"
+  xi=`echo "$xi+$xn+1" | bc`
+  xn=`echo "$lengths" | cut -d\| -f $i`
+done
+
+#echo "$ruler"
+
+# IFS='|'
+
+# read -r line
+# read -r headers
+#   read -ra fields <<< "$headers"
+#   for field in "${fields[@]}"; do
+#     echo "$field"
+#   done
+# read -r line
+
+# while read -r line; do
+#   #echo "$line"
+#   read -ra fields <<< "$line"
+#   for field in "${fields[@]}"; do
+#     echo "$field"
+#   done
+# done
+
