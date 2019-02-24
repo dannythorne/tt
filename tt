@@ -1,88 +1,119 @@
 #!/bin/bash
 
+rulerAfterFirstRow=1
+
+limitColWidth=0
+maxColWidth=24
+
+echo "$#"
+
+if (( $# > 0 )) ; then
+  echo "$1"
+  re="^[0-9]+$"
+  if [[ $1 =~ $re ]]; then
+    echo "asdf"
+    limitColWidth=1
+    maxColWidth=$1
+  fi
+fi
+
+echo "$limitColWidth $maxColWidth"
+
 # Read the rows into an array of lines.
 lines=()
 n=0
 while read -r line; do
-
- if [ $n == 0 ]; then
-   if [ "${line:0:1}" == "+" ]; then
-     ruler=$line
-   fi
- fi
-
- if [ "${line:0:1}" != "+" ]; then
-    lines+=( "$line" )
-    (( n++ ))
- fi
+  if [ $n == 0 ]; then if [ "${line:0:1}" == "+" ]; then ruler=$line; fi; fi
+  asdf=print # silliness to avoid breaking syntax highlighting
+  line=${line//[^[:$asdf:]]/ } # Blank out non-printables.
+  if [ "${line:0:1}" != "+" ]; then lines+=( "$line" ); (( n++ )); fi
 done
 
-# Determine the number and length of each field/column.
-x=${ruler/#+/}
-x=${ruler/%+/}
-IFS='+'
-read -ra lengths <<< "$x"
+# Determine the number and length of each field/column in original table.
+rulerSegments=${ruler/#+/}
+rulerSegments=${ruler/%+/}
+IFS='+' read -ra lengths <<< $rulerSegments
 
 rulerDelims=${ruler//[^+]/}
 m=${#rulerDelims}
 
+# Determine column widths for new (transposed) table.
 widths=()
+newRuler='+'
 for fromRow in "${lines[@]}" ; do
+
   colWidth=0
   xj=2
   xm=${#lengths[1]}
   k=2
   for ((j=2;j<m;j++)) do
-    x=${fromRow:$xj:$xm-1}
-    x="   $x"
+
+    field=${fromRow:$xj:$xm-1}
     shopt -s extglob
-    x=${x/#*( )/}
-    x=${x/%*( )/}
+    field=${field/#*( )/}
+    field=${field/%*( )/}
     shopt -u extglob
-    fieldLen=${#x}
-    if [ $fieldLen -gt $colWidth ]; then
-      colWidth=$fieldLen
-    fi
+
+    fieldLen=${#field};
+    if (( $fieldLen > $colWidth )); then colWidth=$fieldLen; fi
+
     xj=$(( xj+xm+1 ))
     xm=${#lengths[$k]}
     (( k++ ))
   done
-# if [ $colWidth -gt 16 ]; then
-#   colWidth=16
-# fi
+
+  if ((limitColWidth)); then
+    if (( $colWidth > $maxColWidth )); then colWidth=$maxColWidth; fi
+  fi
   widths+=( "$colWidth" )
+  printf -v nextSeg %$((colWidth))s;
+  nextSeg=${nextSeg// /-}
+  newRuler="$newRuler-$nextSeg-+"
 done
+
+echo "$newRuler"
 
 # Output the columns in rows.
 xi=2
 xn=${#lengths[1]}
 for ((i=2;i<m;i++)) do
 
-  toRow=""
+  toRow="|"
   j=0
   for fromRow in "${lines[@]}" ; do
-    x=${fromRow:$xi:$xn-1}
-    x="   $x"
+
+    field=${fromRow:$xi:$xn-1}
     shopt -s extglob
-    x=${x/#*( )/}
-    x=${x/%*( )/}
+    field=${field/#*( )/}
+    field=${field/%*( )/}
     shopt -u extglob
-    field=${x}
 
     colWidth=${widths[$j]}
 
-    printf -v colPad %${colWidth}s
+    fieldWidth=${#field}
+    if ((fieldWidth > colWidth)); then
+      field=${field:$((fieldWidth-colWidth)):$colWidth}
+      fieldWidth=${#field}
+    fi
+
+    colPad=''
+    if ((colWidth > fieldWidth)); then
+      printf -v colPad %$((colWidth-fieldWidth))s;
+    fi
 
     field=$colPad$field
-    fieldWidth=${#field}
-    field=${field:$fieldWidth-$colWidth:$colWidth}
-    toRow="$toRow|$field"
+    toRow="$toRow $field |"
     (( j++ ))
   done
 
-  toRow="$toRow|"
+  toRow="$toRow"
   echo "$toRow"
+  if ((rulerAfterFirstRow && i==2)); then
+    echo "$newRuler"
+  fi
   xi=$(( xi+xn+1 ))
   xn=${#lengths[$i]}
 done
+
+echo "$newRuler"
 
