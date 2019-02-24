@@ -5,19 +5,13 @@ rulerAfterFirstRow=1
 limitColWidth=0
 maxColWidth=24
 
-echo "$#"
-
 if (( $# > 0 )) ; then
-  echo "$1"
   re="^[0-9]+$"
   if [[ $1 =~ $re ]]; then
-    echo "asdf"
     limitColWidth=1
     maxColWidth=$1
   fi
 fi
-
-echo "$limitColWidth $maxColWidth"
 
 # Read the rows into an array of lines.
 lines=()
@@ -40,6 +34,7 @@ m=${#rulerDelims}
 # Determine column widths for new (transposed) table.
 widths=()
 newRuler='+'
+rowNum=1
 for fromRow in "${lines[@]}" ; do
 
   colWidth=0
@@ -62,13 +57,14 @@ for fromRow in "${lines[@]}" ; do
     (( k++ ))
   done
 
-  if ((limitColWidth)); then
+  if ((rowNum>1 && limitColWidth)); then
     if (( $colWidth > $maxColWidth )); then colWidth=$maxColWidth; fi
   fi
   widths+=( "$colWidth" )
   printf -v nextSeg %$((colWidth))s;
   nextSeg=${nextSeg// /-}
   newRuler="$newRuler-$nextSeg-+"
+  (( rowNum++ ))
 done
 
 echo "$newRuler"
