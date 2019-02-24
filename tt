@@ -23,11 +23,10 @@ x=${ruler/%+/}
 IFS='+'
 read -ra lengths <<< "$x"
 
-IFS='|'
 rulerDelims=${ruler//[^+]/}
 m=${#rulerDelims}
 
-widths=""
+widths=()
 for fromRow in "${lines[@]}" ; do
   colWidth=0
   xj=2
@@ -44,40 +43,46 @@ for fromRow in "${lines[@]}" ; do
     if [ $fieldLen -gt $colWidth ]; then
       colWidth=$fieldLen
     fi
-    xj=`echo "$xj+$xm+1" | bc`
+    xj=$(( xj+xm+1 ))
     xm=${#lengths[$k]}
     (( k++ ))
   done
 # if [ $colWidth -gt 16 ]; then
 #   colWidth=16
 # fi
-  widths=`echo "$widths$colWidth|"`
+  widths+=( "$colWidth" )
 done
 
 # Output the columns in rows.
 xi=2
 xn=${#lengths[1]}
 for ((i=2;i<m;i++)) do
-  #echo "$xi $xn"
 
   toRow=""
-  j=1
+  j=0
   for fromRow in "${lines[@]}" ; do
-    field=`echo "${fromRow:$xi:$xn-1}" |  sed 's/^ *//' | sed 's/ *$//'`
+    x=${fromRow:$xi:$xn-1}
+    x="   $x"
+    shopt -s extglob
+    x=${x/#*( )/}
+    x=${x/%*( )/}
+    shopt -u extglob
+    field=${x}
 
-    colWidth=`echo "$widths" | cut -d\| -f $j`
+    colWidth=${widths[$j]}
 
     printf -v colPad %${colWidth}s
 
-    field=`echo "$colPad$field" | rev`
-    field=`echo "${field:0:$colWidth}" | rev`
+    field=$colPad$field
+    fieldWidth=${#field}
+    field=${field:$fieldWidth-$colWidth:$colWidth}
     toRow="$toRow|$field"
     (( j++ ))
   done
 
   toRow="$toRow|"
   echo "$toRow"
-  xi=`echo "$xi+$xn+1" | bc`
+  xi=$(( xi+xn+1 ))
   xn=${#lengths[$i]}
 done
 
