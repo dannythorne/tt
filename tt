@@ -29,15 +29,22 @@ done
 #echo "n = $n"
 
 # Determine the number and length of each field/column.
-lengths=`echo "$ruler" | sed 's/^+//' | sed 's/+$//' | sed 's/+/\n/g' | awk '{ printf("%d|", length($0)) }' | xargs echo`
+x=${ruler/#+/}
+x=${ruler/%+/}
+#x=${x//+/\n}
+IFS='+'
+read -ra lengths <<< "$x"
+#echo ${lengths[1]}
+#lengths=`echo "$ruler" | sed 's/^+//' | sed 's/+$//' | sed 's/+/\n/g' | awk '{ printf("%d|", length($0)) }' | xargs echo`
 #echo "$lengths"
 
 IFS='|'
 # Determine the number of fields/columns.
 #echo "${lines[0]}"
-asdf=`echo "${lines[0]}" | sed 's/[^|]//g'`
+#asdf=`echo "${lines[0]}" | sed 's/[^|]//g'`
 #echo "asdf = $asdf"
-m=`echo "${lines[0]}" | sed 's/[^|]//g' | wc -c`
+rulerDelims=${ruler//[^+]/}
+m=${#rulerDelims} #`echo "${ruler}" | sed 's/[^+]//g' | wc -c`
 #echo "m = $m"
 
 #echo ""
@@ -46,26 +53,41 @@ widths=""
 for fromRow in "${lines[@]}" ; do
   colWidth=0
   xj=2
-  xm=`echo "$lengths" | cut -d\| -f 1`
+  #xm=`echo "$lengths" | cut -d\| -f 1`
+  xm=${#lengths[1]}
   k=2
   for ((j=2;j<m;j++)) do
-    fieldLen=`echo "${fromRow:$xj:$xm-1}" |  sed 's/^ *//' | sed 's/ *$//' | awk '{ print length($0)}'`
+    x=${fromRow:$xj:$xm-1}
+    x="   $x"
+    #echo "field      '$x'"
+    shopt -s extglob
+    x=${x/#*( )/}
+    #echo "left  trim '$x'"
+    #x=${x/%[[:space:]]*/}
+    x=${x/%*( )/}
+    shopt -u extglob
+    #echo "right trim '$x'"
+    fieldLen=${#x}
+    #echo -n "$fieldLen "
+    #fieldLen=`echo "${fromRow:$xj:$xm-1}" |  sed 's/^ *//' | sed 's/ *$//' | awk '{ print length($0)}'`
+    #echo "$fieldLen"
     if [ $fieldLen -gt $colWidth ]; then
       colWidth=$fieldLen
     fi
     xj=`echo "$xj+$xm+1" | bc`
-    xm=`echo "$lengths" | cut -d\| -f $k`
+    #xm=`echo "$lengths" | cut -d\| -f $k`
+    xm=${#lengths[$k]}
     (( k++ ))
   done
-  if [ $colWidth -gt 16 ]; then
-    colWidth=16
-  fi
+# if [ $colWidth -gt 16 ]; then
+#   colWidth=16
+# fi
   widths=`echo "$widths$colWidth|"`
 done
 
 # Output the columns in rows.
 xi=2
-xn=`echo "$lengths" | cut -d\| -f 1`
+xn=${#lengths[1]} #`echo "$lengths" | cut -d\| -f 1`
 for ((i=2;i<m;i++)) do
   #echo "$xi $xn"
 
@@ -96,7 +118,7 @@ for ((i=2;i<m;i++)) do
   toRow="$toRow|"
   echo "$toRow"
   xi=`echo "$xi+$xn+1" | bc`
-  xn=`echo "$lengths" | cut -d\| -f $i`
+  xn=${#lengths[$i]} #`echo "$lengths" | cut -d\| -f $i`
 done
 
 #echo "$ruler"
