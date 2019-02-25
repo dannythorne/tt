@@ -102,9 +102,11 @@ for ((i=2;i<m;i++)) do
     colWidth=${widths[$j]}
 
     fieldWidth=${#field}
+    colMark=' '
     if ((fieldWidth > colWidth)); then
       field=${field:$((fieldWidth-colWidth)):$colWidth}
       fieldWidth=${#field}
+      colMark='<'
     fi
 
     colPad=''
@@ -113,7 +115,7 @@ for ((i=2;i<m;i++)) do
     fi
 
     field=$colPad$field
-    toRow="$toRow $field |"
+    toRow="$toRow$colMark$field |"
     (( j++ ))
   done
 
