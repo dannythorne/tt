@@ -39,14 +39,11 @@ while read -r line; do
 done
 
 # Determine the number and length of each field/column in original table.
-rulerSegments=${ruler/#+/}
-rulerSegments=${ruler/%+/}
-IFS='+' read -ra lengths <<< $rulerSegments
-
+IFS='+' read -ra lengths <<< $ruler
 rulerDelims=${ruler//[^+]/}
 m=${#rulerDelims}
 
-# Determine column widths for new (transposed) table.
+# Determine column widths for the new (transposed) table.
 widths=()
 newRuler='+'
 rowNum=1
@@ -55,8 +52,9 @@ for fromRow in "${lines[@]}" ; do
   colWidth=0
   xj=2
   xm=${#lengths[1]}
+  echo "xm: $xm"
   k=2
-  for ((j=2;j<m;j++)) do
+  for ((j=1;j<m;j++)) do
 
     field=${fromRow:$xj:$xm-1}
     shopt -s extglob
@@ -77,8 +75,7 @@ for fromRow in "${lines[@]}" ; do
   fi
   widths+=( "$colWidth" )
   printf -v nextSeg %$((colWidth))s;
-  nextSeg=${nextSeg// /-}
-  newRuler="$newRuler-$nextSeg-+"
+  newRuler="$newRuler-${nextSeg// /-}-+"
   (( rowNum++ ))
 done
 
@@ -86,9 +83,9 @@ echo "$newRuler"
 
 # Output the columns in rows.
 xi=2
-xn=${#lengths[1]}
-for ((i=2;i<m;i++)) do
+for ((i=1;i<m;i++)) do
 
+  xn=${#lengths[$i]}
   toRow="|"
   j=0
   for fromRow in "${lines[@]}" ; do
@@ -102,11 +99,14 @@ for ((i=2;i<m;i++)) do
     colWidth=${widths[$j]}
 
     fieldWidth=${#field}
-    colMark=' '
+    leftColMark=' '
+    rightColMark=' '
     if ((fieldWidth > colWidth)); then
-      field=${field:$((fieldWidth-colWidth)):$colWidth}
+      #field=${field:$((fieldWidth-colWidth)):$colWidth}
+      #leftColMark='«'
+      field=${field:0:$colWidth}
       fieldWidth=${#field}
-      colMark='<'
+      rightColMark='»'
     fi
 
     colPad=''
@@ -115,17 +115,16 @@ for ((i=2;i<m;i++)) do
     fi
 
     field=$colPad$field
-    toRow="$toRow$colMark$field |"
+    toRow="$toRow$leftColMark$field$rightColMark|"
     (( j++ ))
   done
 
   toRow="$toRow"
   echo "$toRow"
-  if ((rulerAfterFirstRow && i==2)); then
+  if ((rulerAfterFirstRow && i==1)); then
     echo "$newRuler"
   fi
   xi=$(( xi+xn+1 ))
-  xn=${#lengths[$i]}
 done
 
 echo "$newRuler"
