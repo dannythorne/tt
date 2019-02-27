@@ -63,7 +63,7 @@ for fromRow in "${lines[@]}" ; do
   k=2
   for ((j=1;j<m;j++)) do
 
-    field=${fromRow:$xj:$xm-1}
+    field=${fromRow:$xj:$xm-2}
     shopt -s extglob
     field=${field/#*( )/}
     field=${field/%*( )/}
@@ -97,7 +97,7 @@ for ((i=1;i<m;i++)) do
   j=0
   for fromRow in "${lines[@]}" ; do
 
-    field=${fromRow:$xi:$xn-1}
+    field=${fromRow:$xi:$xn-2}
     shopt -s extglob
     field=${field/#*( )/}
     field=${field/%*( )/}
