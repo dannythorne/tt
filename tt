@@ -4,12 +4,20 @@ rulerAfterFirstRow=1
 
 limitColWidth=0
 maxColWidth=24
+leftJustify=0
 
 if (( $# > 0 )) ; then
   re="^[0-9]+$"
   if [[ $1 =~ $re ]]; then
     limitColWidth=1
     maxColWidth=$1
+  fi
+fi
+
+if (( $# > 1 )) ; then
+  re="[01]"
+  if [[ $2 =~ $re ]]; then
+    leftJustify=$2
   fi
 fi
 
@@ -52,7 +60,6 @@ for fromRow in "${lines[@]}" ; do
   colWidth=0
   xj=2
   xm=${#lengths[1]}
-  echo "xm: $xm"
   k=2
   for ((j=1;j<m;j++)) do
 
@@ -102,11 +109,14 @@ for ((i=1;i<m;i++)) do
     leftColMark=' '
     rightColMark=' '
     if ((fieldWidth > colWidth)); then
-      #field=${field:$((fieldWidth-colWidth)):$colWidth}
-      #leftColMark='«'
-      field=${field:0:$colWidth}
+      if ((leftJustify)); then
+        field=${field:0:$colWidth}
+        rightColMark='»'
+      else
+        field=${field:$((fieldWidth-colWidth)):$colWidth}
+        leftColMark='«'
+      fi
       fieldWidth=${#field}
-      rightColMark='»'
     fi
 
     colPad=''
@@ -114,7 +124,11 @@ for ((i=1;i<m;i++)) do
       printf -v colPad %$((colWidth-fieldWidth))s;
     fi
 
-    field=$colPad$field
+    if ((j>0 && leftJustify)); then
+      field=$field$colPad
+    else
+      field=$colPad$field
+    fi
     toRow="$toRow$leftColMark$field$rightColMark|"
     (( j++ ))
   done
